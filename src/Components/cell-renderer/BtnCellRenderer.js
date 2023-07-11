@@ -5,9 +5,6 @@ import { Button } from '@mui/material';
 function BtnCellRenderer(props) {
 
     const btnClickedHandler = (event) => {
-		console.log("BtnCellRenderer: ", event);
-
-		console.log("props.value: ", props.value);
         props.clicked(event, props.value);
     }
 

@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { Button, FormControlLabel, FormLabel, Grid, InputLabel, MenuItem, Radio, RadioGroup, Select, TextField } from '@mui/material';
 import { Formik } from 'formik';
 import * as Yup from "yup";
+import { useLocation, useNavigate } from 'react-router-dom';
+import { VENDORS, CATEGORY } from '../../Shared/common';
+import { ToastContainer, toast } from 'react-toastify';
+// Import toastify css file
+import 'react-toastify/dist/ReactToastify.css';
 
 function Product() {
 
-    const initialValues = {
+    const { state } = useLocation();
+    const navigate = useNavigate();
+    const formikRef = useRef();
+    // const { data, tag } = state; // Read values passed on state
+
+    const [isSubmitted, setIsSubmitted] = useState(state && state.tag === "VIEW" ? true : false);
+
+    const [initialValues, setInitialValues] = useState({
         productName: "",
         description: "",
         category: "",
@@ -14,7 +26,7 @@ function Product() {
         price: "",
         quantity: "",
         status: "",
-    };
+    });
 
     const validationSchema = Yup.object().shape({
         productName: Yup.string()
@@ -33,26 +45,62 @@ function Product() {
             .oneOf(["InStock", "OutOfStock"], "Status is required").required("Status is required"),
     });
 
+    useEffect(() => {
+        if (state && (state.tag === "EDIT" || state.tag === "VIEW")) {
+            const { data } = state;
+            initialValues.productName = data.name;
+            initialValues.description = data.description;
+            initialValues.category = data.category;
+            initialValues.vendor = data.vendor;
+            initialValues.price = data.price;
+            initialValues.quantity = data.quantity;
+            initialValues.status = data.status;
+            console.log(initialValues);
+            setInitialValues(initialValues);
+        }
+    }, []);
+
+    const notify = (message)=>{
+        // Calling toast method by passing string
+        toast(message)
+    }
+
     const handleSubmit = (values, errors) => {
+        const { tag } = state;
         const postObj = {
             name: values.productName,
             description: values.description,
             category: values.category,
             quantity: values.quantity,
             price: values.price,
-            sku: values.sku,
+            vendor: values.vendor,
             status: values.status,
             created_at: new Date(),
             updated_at: new Date(),
         }
-        console.log(postObj);
-        axios.post(`http://localhost:8080/ims/product/`, {
-            headers: {
-                contentType: "application/json",
-            }
-        }, postObj).then(response => {
-            console.log(response);
-        }).catch(error => console.error(error));
+        if (tag !== "EDIT") {
+            axios.post(`http://localhost:8080/ims/products`, postObj).then(response => {
+                formikRef.current?.resetForm();
+                setIsSubmitted(true);
+                notify("Product added successfully")
+                setTimeout(() => {
+                    navigate(-1);
+                }, 2000);
+            }).catch(error => console.error(error));
+        } else if (tag === "EDIT") {
+            axios.put(`http://localhost:8080/ims/products/${state.data.id}`, postObj).then(response => {
+                formikRef.current?.resetForm();
+                setIsSubmitted(true);
+                notify("Product updated successfully");
+                setTimeout(() => {
+                    navigate(-1);
+                }, 2000);
+            }).catch(error => console.error(error));
+        }
+    };
+
+    const handleOnCancel = () => {
+        navigate(-1);
     };
 
     return (
@@ -61,22 +109,25 @@ function Product() {
             <Grid container style={{ padding: "10px", background: "#FFFFFF", marginTop: "16px" }}>
                 <Grid xs={12}>
                     <Formik
+                        innerRef={formikRef}
                         initialValues={initialValues}
+                        enableReinitialize={true}
                         onSubmit={(values, errors) => {
                             handleSubmit(values, errors);
                         }}
                         validationSchema={validationSchema}
+                        disabled={!isSubmitted}
                     >
-                        {({ values, errors, touched, handleSubmit, handleChange, handleBlur }) => {
+                        {({ values, errors, touched, handleSubmit, handleChange, handleBlur, resetForm }) => {
                             return (
                                 <form onSubmit={handleSubmit}>
                                     <Grid container style={{ padding: "10px", background: "#FFFFFF" }}>
                                         <Grid xs={12} style={{ display: "flex", alignItems: "center", justifyContent: "right" }}>
                                             <div>
                                                 <Button variant="contained" style={{ background: "white", color: "black" }}
-                                                    type='button'>Cancel</Button>
-                                                <Button variant="contained" style={{ background: "darkblue", color: "white", marginLeft: "16px" }}
-                                                    type='submit'>Save</Button>
+                                                    type='button' onClick={handleOnCancel}>Cancel</Button>
+                                                <Button variant="contained" style={{ background: "darkblue", color: "white", marginLeft: "16px", opacity: isSubmitted ? "0.5" : "1" }}
+                                                    type='submit' disabled={isSubmitted}>Save</Button>
                                             </div>
                                         </Grid>
                                     </Grid>
@@ -89,6 +140,7 @@ function Product() {
                                                 variant="outlined"
                                                 name="productName"
                                                 value={values.productName}
+                                                disabled={isSubmitted}
                                                 onChange={handleChange("productName")}
                                                 onBlur={handleBlur("productName")} />
                                             <div style={{ color: "red" }}>{touched.productName && errors.productName}</div>
@@ -104,6 +156,7 @@ function Product() {
                                                 rows={3}
                                                 maxRows={4}
                                                 value={values.description}
+                                                disabled={isSubmitted}
                                                 onChange={handleChange("description")}
                                                 onBlur={handleBlur("description")} />
                                             <div style={{ color: "red" }}>{touched.description && errors.description}</div>
@@ -116,13 +169,16 @@ function Product() {
                                                 id="demo-simple-select"
                                                 name='category'
                                                 value={values.category}
+                                                disabled={isSubmitted}
                                                 placeholder="Select Category"
                                                 onChange={handleChange("category")}
                                                 onBlur={handleBlur("category")}
                                             >
-                                                <MenuItem value={10}>Ten</MenuItem>
-                                                <MenuItem value={20}>Twenty</MenuItem>
-                                                <MenuItem value={30}>Thirty</MenuItem>
+                                                {CATEGORY.map((item, index) => {
+                                                    return (
+                                                        <MenuItem key={index} value={item.value}>{item.name}</MenuItem>
+                                                    )
+                                                })}
                                             </Select>
                                             <div style={{ color: "red" }}>{touched.category && errors.category}</div>
                                         </div>
@@ -135,13 +191,16 @@ function Product() {
                                                     id="demo-simple-select"
                                                     name='vendor'
                                                     value={values.vendor}
+                                                    disabled={isSubmitted}
                                                     placeholder='Select Vendor'
                                                     onChange={handleChange("vendor")}
                                                     onBlur={handleBlur("vendor")}
                                                 >
-                                                    <MenuItem value={10}>Ten</MenuItem>
-                                                    <MenuItem value={20}>Twenty</MenuItem>
-                                                    <MenuItem value={30}>Thirty</MenuItem>
+                                                    {VENDORS.map((item, index) => {
+                                                        return (
+                                                            <MenuItem key={index} value={item.value}>{item.name}</MenuItem>
+                                                        )
+                                                    })}
                                                 </Select>
                                                 <div style={{ color: "red" }}>{touched.vendor && errors.vendor}</div>
                                             </div>
@@ -153,6 +212,7 @@ function Product() {
                                                     variant="outlined"
                                                     name="price"
                                                     value={values.price}
+                                                    disabled={isSubmitted}
                                                     onChange={handleChange("price")}
                                                     onBlur={handleBlur("price")} />
                                                 <div style={{ color: "red" }}>{touched.price && errors.price}</div>
@@ -165,6 +225,7 @@ function Product() {
                                                     variant="outlined"
                                                     name="quantity"
                                                     value={values.quantity}
+                                                    disabled={isSubmitted}
                                                     onChange={handleChange("quantity")}
                                                     onBlur={handleBlur("quantity")} />
                                                 <div style={{ color: "red" }}>{touched.quantity && errors.quantity}</div>
@@ -181,13 +242,9 @@ function Product() {
                                                 style={{ display: "flex", flexDirection: "row" }}
                                                 onBlur={handleBlur("status")}
                                             >
-                                                <FormControlLabel value="OutOfStock" control={<Radio />} label="Out Of Stock" />
-                                                <FormControlLabel value="InStock" control={<Radio />} label="Active" />
+                                                <FormControlLabel disabled={isSubmitted} value="OutOfStock" control={<Radio />} label="Out Of Stock" />
+                                                <FormControlLabel disabled={isSubmitted} value="InStock" control={<Radio />} label="Active" />
                                             </RadioGroup>
-                                            {/* <div>
-                                                <FormControlLabel name="status" value={values.status === "OutOfStock"} control={<Radio />} label="Out Of Stock" />
-                                                <FormControlLabel name="status" value={values.status === "InStock"} control={<Radio />} label="Active" />
-                                            </div> */}
                                             <div style={{ color: "red" }}>{touched.status && errors.status}</div>
                                         </div>
                                     </div>
@@ -196,6 +253,7 @@ function Product() {
                         }}
                     </Formik>
                 </Grid>
+                <ToastContainer autoClose={2000} />
             </Grid>
         </div>
     );
