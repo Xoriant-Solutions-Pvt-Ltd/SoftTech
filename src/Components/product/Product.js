@@ -8,6 +8,7 @@ import { VENDORS, CATEGORY } from '../../Shared/common';
 import { ToastContainer, toast } from 'react-toastify';
 // Import toastify css file
 import 'react-toastify/dist/ReactToastify.css';
+import "../product/product.css";  // Importing css file
 
 function Product() {
 
@@ -66,7 +67,6 @@ function Product() {
     }
 
     const handleSubmit = (values, errors) => {
-        const { tag } = state;
         const postObj = {
             name: values.productName,
             description: values.description,
@@ -78,20 +78,20 @@ function Product() {
             created_at: new Date(),
             updated_at: new Date(),
         }
-        if (tag !== "EDIT") {
-            axios.post(`http://localhost:8080/ims/products`, postObj).then(response => {
-                formikRef.current?.resetForm();
-                setIsSubmitted(true);
-                notify("Product added successfully")
-                setTimeout(() => {
-                    navigate(-1);
-                }, 2000);
-            }).catch(error => console.error(error));
-        } else if (tag === "EDIT") {
+        if (state && state.tag === "EDIT") {
             axios.put(`http://localhost:8080/ims/products/${state.data.id}`, postObj).then(response => {
                 formikRef.current?.resetForm();
                 setIsSubmitted(true);
                 notify("Product updated successfully");
+                setTimeout(() => {
+                    navigate(-1);
+                }, 2000);
+            }).catch(error => console.error(error));
+        } else {
+            axios.post(`http://localhost:8080/ims/products`, postObj).then(response => {
+                formikRef.current?.resetForm();
+                setIsSubmitted(true);
+                notify("Product added successfully")
                 setTimeout(() => {
                     navigate(-1);
                 }, 2000);
@@ -105,8 +105,8 @@ function Product() {
 
     return (
         <div>
-            <strong style={{ fontSize: "1.5rem" }}>New Product</strong>
-            <Grid container style={{ padding: "10px", background: "#FFFFFF", marginTop: "16px" }}>
+            <strong className="page-title">New Product</strong>
+            <Grid container className="product-page-grid-container">
                 <Grid xs={12}>
                     <Formik
                         innerRef={formikRef}
@@ -121,18 +121,18 @@ function Product() {
                         {({ values, errors, touched, handleSubmit, handleChange, handleBlur, resetForm }) => {
                             return (
                                 <form onSubmit={handleSubmit}>
-                                    <Grid container style={{ padding: "10px", background: "#FFFFFF" }}>
-                                        <Grid xs={12} style={{ display: "flex", alignItems: "center", justifyContent: "right" }}>
+                                    <Grid container className="grid-field-container">
+                                        <Grid xs={12} className="grid-item">
                                             <div>
-                                                <Button variant="contained" style={{ background: "white", color: "black" }}
+                                                <Button variant="contained" className="btn-cancel"
                                                     type='button' onClick={handleOnCancel}>Cancel</Button>
-                                                <Button variant="contained" style={{ background: "darkblue", color: "white", marginLeft: "16px", opacity: isSubmitted ? "0.5" : "1" }}
+                                                <Button variant="contained" className="btn-submit" style={{ opacity: isSubmitted ? "0.5" : "1" }}
                                                     type='submit' disabled={isSubmitted}>Save</Button>
                                             </div>
                                         </Grid>
                                     </Grid>
-                                    <div style={{ width: "70%" }}>
-                                        <div style={{ marginBottom: "10px" }}>
+                                    <div className="form-container">
+                                        <div className="div-field-container">
                                             <InputLabel id="demo-simple-select-label">Product Name</InputLabel>
                                             <TextField
                                                 fullWidth
@@ -143,9 +143,9 @@ function Product() {
                                                 disabled={isSubmitted}
                                                 onChange={handleChange("productName")}
                                                 onBlur={handleBlur("productName")} />
-                                            <div style={{ color: "red" }}>{touched.productName && errors.productName}</div>
+                                            <div className="div-error-message">{touched.productName && errors.productName}</div>
                                         </div>
-                                        <div style={{ marginBottom: "10px" }}>
+                                        <div className="div-field-container">
                                             <InputLabel id="demo-simple-select-label">Description</InputLabel>
                                             <TextField
                                                 fullWidth
@@ -159,9 +159,9 @@ function Product() {
                                                 disabled={isSubmitted}
                                                 onChange={handleChange("description")}
                                                 onBlur={handleBlur("description")} />
-                                            <div style={{ color: "red" }}>{touched.description && errors.description}</div>
+                                            <div className="div-error-message">{touched.description && errors.description}</div>
                                         </div>
-                                        <div style={{ marginBottom: "10px" }}>
+                                        <div className="div-field-container">
                                             <InputLabel id="demo-simple-select-label">Category</InputLabel>
                                             <Select
                                                 fullWidth
@@ -180,9 +180,9 @@ function Product() {
                                                     )
                                                 })}
                                             </Select>
-                                            <div style={{ color: "red" }}>{touched.category && errors.category}</div>
+                                            <div className="div-error-message">{touched.category && errors.category}</div>
                                         </div>
-                                        <div style={{ display: "flex", marginBottom: "10px", justifyContent: "space-between" }}>
+                                        <div className="div-select-vendor">
                                             <div>
                                                 <InputLabel id="demo-simple-select-label">Vendor</InputLabel>
                                                 <Select
@@ -202,7 +202,7 @@ function Product() {
                                                         )
                                                     })}
                                                 </Select>
-                                                <div style={{ color: "red" }}>{touched.vendor && errors.vendor}</div>
+                                                <div className="div-error-message">{touched.vendor && errors.vendor}</div>
                                             </div>
                                             <div>
                                                 <InputLabel id="demo-simple-select-label">Price</InputLabel>
@@ -215,7 +215,7 @@ function Product() {
                                                     disabled={isSubmitted}
                                                     onChange={handleChange("price")}
                                                     onBlur={handleBlur("price")} />
-                                                <div style={{ color: "red" }}>{touched.price && errors.price}</div>
+                                                <div className="div-error-message">{touched.price && errors.price}</div>
                                             </div>
                                             <div>
                                                 <InputLabel id="demo-simple-select-label">Quantity</InputLabel>
@@ -228,10 +228,10 @@ function Product() {
                                                     disabled={isSubmitted}
                                                     onChange={handleChange("quantity")}
                                                     onBlur={handleBlur("quantity")} />
-                                                <div style={{ color: "red" }}>{touched.quantity && errors.quantity}</div>
+                                                <div className="div-error-message">{touched.quantity && errors.quantity}</div>
                                             </div>
                                         </div>
-                                        <div style={{ marginBottom: "10px" }}>
+                                        <div className="div-field-container">
                                             <FormLabel id="status">Status</FormLabel>
                                             <RadioGroup
                                                 fullWidth
@@ -239,13 +239,13 @@ function Product() {
                                                 name="status"
                                                 value={values.status}
                                                 onChange={handleChange}
-                                                style={{ display: "flex", flexDirection: "row" }}
+                                                className="radio-group-status"
                                                 onBlur={handleBlur("status")}
                                             >
                                                 <FormControlLabel disabled={isSubmitted} value="OutOfStock" control={<Radio />} label="Out Of Stock" />
                                                 <FormControlLabel disabled={isSubmitted} value="InStock" control={<Radio />} label="Active" />
                                             </RadioGroup>
-                                            <div style={{ color: "red" }}>{touched.status && errors.status}</div>
+                                            <div className="div-error-message">{touched.status && errors.status}</div>
                                         </div>
                                     </div>
                                 </form>

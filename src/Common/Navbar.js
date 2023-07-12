@@ -5,20 +5,26 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import GroupIcon from '@mui/icons-material/Group';
 import StoreIcon from '@mui/icons-material/Store';
+import { Grid, Link } from '@mui/material';
 import '../Common/navbar.css';
-import { Grid } from '@mui/material';
 
 function Navbar() {
+
+    const [selectedMenu, setSelectedMenu] = useState("Dashboard");
+
+    const handleOnMenuClick = (menu) => {
+        setSelectedMenu(menu);
+    };
 
     return (
         <div style={{ border: "1px solid lightgrey", padding: "16px", height: "90vh" }}>
             <Grid container>
                 <Grid xs={8} md={1}>
-                    <WindowIcon sx={{ fontSize: 40 }} style={{ padding: "10px", color: "darkgrey" }} />
-                    <ShoppingCartIcon sx={{ fontSize: 40 }} style={{ padding: "10px", color: "darkgrey" }} />
-                    <LocalOfferIcon sx={{ fontSize: 40 }} style={{ padding: "10px", color: "darkgrey" }} />
-                    <GroupIcon sx={{ fontSize: 40 }} style={{ padding: "10px", color: "darkgrey" }} />
-                    <StoreIcon sx={{ fontSize: 40 }} style={{ padding: "10px", color: "darkgrey" }} />
+                    <Link underline="none" className="menu-link" to={"/"}><WindowIcon onClick={() => handleOnMenuClick("Dashboard")} sx={{ fontSize: 40 }} style={{ padding: "10px", color: selectedMenu === "Dashboard" ? "darkblue" : "darkgrey" }} /></Link>
+                    <Link underline="none" className="menu-link" to={"/cart"}><ShoppingCartIcon onClick={() => handleOnMenuClick("Cart")} sx={{ fontSize: 40 }} style={{ padding: "10px", color: selectedMenu === "Cart" ? "darkblue" : "darkgrey" }} /></Link>
+                    <Link underline="none" className="menu-link" to={"/offers"}><LocalOfferIcon onClick={() => handleOnMenuClick("Offer")} sx={{ fontSize: 40 }} style={{ padding: "10px", color: selectedMenu === "Offer" ? "darkblue" : "darkgrey" }} /></Link>
+                    <Link underline="none" className="menu-link" to={"/group"}><GroupIcon onClick={() => handleOnMenuClick("Group")} sx={{ fontSize: 40 }} style={{ padding: "10px", color: selectedMenu === "Group" ? "darkblue" : "darkgrey" }} /></Link>
+                    <Link underline="none" className="menu-link" to={"/business"}><StoreIcon onClick={() => handleOnMenuClick("Business")} sx={{ fontSize: 40 }} style={{ padding: "10px", color: selectedMenu === "Business" ? "darkblue" : "darkgrey" }} /></Link>
                 </Grid>
             </Grid>
         </div>

@@ -1,0 +1,33 @@
+.header-container {
+    padding: 25px 25px 10px 25px;
+    box-shadow: 0 1px lightGrey;
+}
+
+.grid-container {
+    display: flex;
+    align-items: center;
+}
+
+.header-title {
+    font-size: 1.5rem;
+    color: darkblue
+}
+
+.profile-section {
+    display: flex;
+    justify-content: right;
+    gap: 20px;
+    align-items: center;
+}
+
+.notification-icon {
+    color: lightgrey;
+}
+
+.profile-icon {
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid lightGrey;
+    background: darkblue;
+    color: white;
+}

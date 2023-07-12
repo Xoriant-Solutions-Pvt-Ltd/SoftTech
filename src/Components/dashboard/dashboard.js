@@ -9,6 +9,11 @@ import axios from 'axios';
 import CloseIcon from '@mui/icons-material/Close';
 import StatusCellRenderer from '../cell-renderer/StatusCellRenderer';
 import { ToastContainer, toast } from 'react-toastify';
+import * as FileSaver from 'file-saver';
+import XLSX from 'sheetjs-style';
+import { CSVLink } from 'react-csv';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import "./dashboard.css";
 
 function Dashboard() {
 
@@ -27,6 +32,22 @@ function Dashboard() {
     const [sortField, setSortField] = useState('');
     const [sortOrder, setSortOrder] = useState('');
 
+    const headers = [
+        { label: "Product Name", key: "name" },
+        { label: "Category", key: "category" },
+        { label: "Vendor", key: "vendor" },
+        { label: "Description", key: "description" },
+        { label: "Price", key: "price" },
+        { label: "Quantity", key: "quantity" },
+        { label: "Status", key: "status" }
+    ];
+
+    const csvReport = {
+        data: rowData,
+        headers: headers,
+        filename: 'Product_Report.csv'
+    };
+
     const [currentPage, setCurrentPage] = useState(1);
 
     const [selectedData, setSelectedData] = useState(); // Set rowData to Array of Objects, one Object per Row
@@ -39,7 +60,7 @@ function Dashboard() {
         navigate(path);
     }
 
-    const [anchorEl, setAnchorEl] = React.useState(null);
+    const [anchorEl, setAnchorEl] = useState(null);
 
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -62,8 +83,21 @@ function Dashboard() {
         setAnchorElAction(null);
     };
 
+    const [anchorElExport, setAnchorElExport] = useState(null);
+
+    const handleExportClick = (event) => {
+        setAnchorElExport(event.currentTarget);
+    };
+
+    const handleExportPopoverClose = () => {
+        setAnchorElExport(null);
+    };
+
+    const openExportPopover = Boolean(anchorElExport);
+    const exportPopoverId = open ? 'simple-popover-export' : undefined;
+
     const openActionPopover = Boolean(anchorElAction);
-    const actionPopoverId = openActionPopover ? 'simple-popover1' : undefined;
+    const actionPopoverId = openActionPopover ? 'simple-popover-export' : undefined;
 
     var checkboxSelection = function (params) {
         // we put checkbox on the name if we are not doing grouping
@@ -125,7 +159,6 @@ function Dashboard() {
     const handleOnGrdiReady = (params) => {
         axios.get(`http://localhost:8080/ims/products/`)
             .then(rowData => {
-                console.log("rowData", rowData.data);
                 setRowData(rowData.data);
             }).catch(error => console.error(error));
 
@@ -207,19 +240,30 @@ function Dashboard() {
         setFilterState({ ...filterState, ...newFilterObj });
     };
 
+    const fileType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+    const fileExtension = '.xlsx';
+    const handleExportToExcel = () => {
+        const ws = XLSX.utils.json_to_sheet(rowData);
+        const wb = { Sheets: { 'data': ws }, SheetNames: ['data'] };
+        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const data = new Blob([excelBuffer], { type: fileType });
+        FileSaver.saveAs(data, 'Products' + fileExtension);
+        handleExportPopoverClose();
+    };
+
     return (
         <div>
-            <strong style={{ fontSize: "1.5rem" }}>Products</strong>
-            <Grid container style={{ padding: "10px", background: "#FFFFFF", marginTop: "16px" }}>
-                <Grid xs={12} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                        <SearchIcon sx={{ fontSize: 40 }} style={{ color: "darkgrey" }}
+            <strong className="page-title">Products</strong>
+            <Grid container className="grid-product-list-container">
+                <Grid xs={12} className="grid-btn-filter-container">
+                    <div className="div-filter-container">
+                        <SearchIcon sx={{ fontSize: 40 }} className="search-icon"
                             onClick={handleClick} />
                         {
                             filterState.isFiltering && Object.entries(filterState).map(([key, value]) => {
                                 if (value !== "" && key !== "isFiltering") {
                                     return (
-                                        <div key={key} style={{ marginLeft: "16px", display: "flex", alignItems: "center", background: "lightGrey", padding: "5px" }}>
+                                        <div key={key} className="div-filter-lables">
                                             {key}: <strong>{value}</strong><CloseIcon onClick={() => onRemoveFilter(key)} sx={{ fontSize: 20, marginLeft: "8px" }} />
                                         </div>
                                     )
@@ -234,16 +278,19 @@ function Dashboard() {
                         <SearchIcon sx={{ fontSize: 40 }} style={{ color: "darkgrey" }} />
                     </div> */}
                     <div>
-                        <Button variant="contained" style={{ background: "white", color: "black" }}>Export</Button>
-                        <Button variant="contained" style={{ background: "darkblue", color: "white", marginLeft: "16px" }}
+                        <Button variant="contained" className="btn-export" onClick={handleExportClick}>
+                            Export
+                            <KeyboardArrowDownIcon />
+                        </Button>
+                        <Button variant="contained" className="btn-add-new-product"
                             onClick={routeChange}>New Product</Button>
                     </div>
                 </Grid>
             </Grid>
-            <Grid container style={{ padding: "10px", background: "#FFFFFF" }}>
+            <Grid container className="grid-data-grid-container">
                 <Grid xs={12}>
                     {/* On div wrapping Grid a) specify theme CSS Class Class and b) sets Grid size */}
-                    <div className="ag-theme-alpine" style={{ height: 500 }}>
+                    <div className="ag-theme-alpine ag-grid">
                         <AgGridReact
                             ref={gridRef} // Ref for accessing Grid's API
 
@@ -289,8 +336,8 @@ function Dashboard() {
                         }
                     }}
                 >
-                    <div style={{ width: "97%" }}>
-                        <div style={{ marginBottom: "10px" }}>
+                    <div className="form-container">
+                        <div className="div-field-container">
                             <InputLabel id="demo-simple-label">Product Name</InputLabel>
                             <TextField
                                 fullWidth
@@ -300,7 +347,7 @@ function Dashboard() {
                                 value={filterState.name}
                                 onChange={handleChange} />
                         </div>
-                        <div style={{ marginBottom: "10px" }}>
+                        <div className="div-field-container">
                             <InputLabel id="demo-simple-label">Category</InputLabel>
                             <Select
                                 fullWidth
@@ -319,7 +366,7 @@ function Dashboard() {
                                 })}
                             </Select>
                         </div>
-                        <div style={{ marginBottom: "10px" }}>
+                        <div className="div-field-container">
                             <InputLabel id="demo-simple-select-label">Vendor</InputLabel>
                             <Select
                                 fullWidth
@@ -338,7 +385,7 @@ function Dashboard() {
                                 })}
                             </Select>
                         </div>
-                        <div style={{ marginBottom: "10px" }}>
+                        <div className="div-field-container">
                             <InputLabel id="demo-simple-label">Price</InputLabel>
                             <TextField
                                 fullWidth
@@ -348,7 +395,7 @@ function Dashboard() {
                                 value={filterState.price}
                                 onChange={handleChange} />
                         </div>
-                        <div style={{ marginBottom: "10px" }}>
+                        <div className="div-field-container">
                             <InputLabel id="demo-simple-label">Status</InputLabel>
                             <Select
                                 fullWidth
@@ -367,9 +414,9 @@ function Dashboard() {
                                 })}
                             </Select>
                         </div>
-                        <div style={{ padding: "10px", display: "flex", justifyContent: "right" }}>
-                            <Button variant="contained" style={{ background: "white", color: "black" }}>Cancel</Button>
-                            <Button variant="contained" style={{ background: "darkblue", color: "white", marginLeft: "16px" }}>Filter</Button>
+                        <div className="div-btn-container">
+                            <Button variant="contained" className="btn-cancel">Cancel</Button>
+                            <Button variant="contained" className="btn-filter">Filter</Button>
                         </div>
                     </div>
                 </Popover>
@@ -388,6 +435,21 @@ function Dashboard() {
                     <Typography sx={{ p: 1 }} onClick={() => navigateToViewEdit("VIEW")}>View</Typography>
                     <Typography sx={{ p: 1 }} onClick={() => navigateToViewEdit("EDIT")}>Edit</Typography>
                     <Typography sx={{ p: 1 }} onClick={onDeleteRecord}>Delete</Typography>
+                </Popover>
+            </div>
+            <div>
+                <Popover
+                    id={exportPopoverId}
+                    open={openExportPopover}
+                    anchorEl={anchorElExport}
+                    onClose={handleExportPopoverClose}
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                    }}
+                >
+                    <Typography sx={{ p: 1 }} onClick={handleExportToExcel}>Export to Excel</Typography>
+                    <Typography sx={{ p: 1 }}><CSVLink className="csv-link" {...csvReport}>Export to CSV</CSVLink></Typography>
                 </Popover>
             </div>
             <div>

@@ -10,7 +10,7 @@ function BtnCellRenderer(props) {
 
 	return (
 		<div>
-			<Button variant="contained" style={{ background: "lightGrey", color: "black", height: "22px", width: "40px" }}
+			<Button variant="contained" style={{ background: "#f8f8f8", color: "black", height: "22px", width: "40px" }}
             onClick={btnClickedHandler}><MoreHorizIcon /></Button>
 		</div>
 	);

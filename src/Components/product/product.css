@@ -1,0 +1,54 @@
+.page-title {
+    font-size: 1.5rem;
+}
+
+.product-page-grid-container {
+    padding: 10px;
+    background: #FFFFFF;
+    margin-top: 16px;
+}
+
+.grid-field-container {
+    padding: 10px;
+    background: #FFFFFF;
+}
+
+.grid-item {
+    display: flex;
+    align-items: center;
+    justify-content: right;
+}
+
+.btn-cancel {
+    background: white !important;
+    color: black !important;
+}
+
+.btn-submit {
+    background: darkblue !important;
+    color: white !important;
+    margin-left: 16px !important;
+}
+
+.form-container {
+    width: 70%;
+}
+
+.div-field-container {
+    margin-bottom: 10px;
+}
+
+.div-error-message {
+    color: red;
+}
+
+.div-select-vendor {
+    display: flex;
+    margin-bottom: 10px;
+    justify-content: space-between;
+}
+
+.radio-group-status {
+    display: flex !important;
+    flex-direction: row !important;
+}
