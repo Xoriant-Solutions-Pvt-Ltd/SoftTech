@@ -14,11 +14,14 @@ import XLSX from 'sheetjs-style';
 import { CSVLink } from 'react-csv';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import "./dashboard.css";
+import PriceCellRenderer from '../cell-renderer/PriceCellRenderer';
 
 function Dashboard() {
 
     const gridRef = useRef(); // Optional - for accessing Grid's API
     const [rowData, setRowData] = useState(); // Set rowData to Array of Objects, one Object per Row
+
+    const [pageSize, setPageSize] = useState(10);
 
     const [filterState, setFilterState] = useState({
         isFiltering: false,
@@ -121,7 +124,7 @@ function Dashboard() {
         { field: 'category' },
         { field: 'vendor' },
         { field: 'description' },
-        { field: 'price' },
+        { field: 'price', cellRenderer: PriceCellRenderer },
         { field: 'quantity' },
         { field: 'status', cellRenderer: StatusCellRenderer },
         {
@@ -157,7 +160,7 @@ function Dashboard() {
     }, []);
 
     const handleOnGrdiReady = (params) => {
-        axios.get(`http://localhost:8080/ims/products/`)
+        axios.get(`http://localhost:8080/ims/products?pageNumber=${currentPage}&noOfRecords=${pageSize}`)
             .then(rowData => {
                 setRowData(rowData.data);
             }).catch(error => console.error(error));
@@ -172,13 +175,12 @@ function Dashboard() {
         const { name, value } = event.target;
         setFilterState(prevState => ({
             ...prevState,
-            isFiltering: true,
             [name]: value
         }));
     };
 
     const navigateToViewEdit = (tag) => {
-        navigate('/newProduct', { state: { data: selectedData, tag: tag } });
+        navigate(`/product/${selectedData.id}?mode=${tag}`, { state: { data: selectedData, tag: tag } });
     };
 
     const handleOnOpenDialog = () => {
@@ -207,7 +209,7 @@ function Dashboard() {
         const sortModel = sortController.getSortModel();
         if (sortModel.length > 0) {
             const { colId, sort } = sortModel[0];
-            axios.get(`http://localhost:8080/ims/products/?columnName=${colId}&sortBy=${sort}&pageNumber=${currentPage}&noOfRecords=10`)
+            axios.get(`http://localhost:8080/ims/products?columnName=${colId}&sortBy=${sort}&pageNumber=${currentPage}&noOfRecords=${pageSize}`)
                 .then(rowData => {
                     setSortField(colId);
                     setSortOrder(sort);
@@ -222,22 +224,36 @@ function Dashboard() {
         }
     };
 
-    const handleChangePage = ({ api: { paginationProxy } }) => {
-        const currPage = paginationProxy.getCurrentPage();
-        // axios.get(`http://localhost:8080/ims/products/?columnName=${sortField}&sortBy=${sortOrder}&pageNumber=${currPage + 1}&noOfRecords=10`)
-        // .then(rowData => {
-        //     console.log("rowData", rowData.data);
-        //     setRowData(rowData.data);
-        //     setCurrentPage(currPage + 1);
-        // }).catch(error => {
-        //     console.error(error)
-        // });
-    };
-
     const onRemoveFilter = (key) => {
         let newFilterObj = filterState;
         newFilterObj[key] = '';
+        onApplyFilter(newFilterObj);
+        delete newFilterObj.isFiltering;
+        const isEmpty = !Object.values(newFilterObj).some(x => x !== '');
+        isEmpty ? newFilterObj['isFiltering'] = false : newFilterObj['isFiltering'] = true;
         setFilterState({ ...filterState, ...newFilterObj });
+    };
+
+    const onApplyFilter = (filterState) => {
+        axios.get(`http://localhost:8080/ims/products/search?name=${filterState.name}&category=${filterState.category}&price=${filterState.price}&status=${filterState.status}`)
+            .then(rowData => {
+                if (rowData.data.length !== 0) {
+                    setRowData(rowData.data);
+                } else {
+                    handleOnGrdiReady();
+                }
+                setAnchorEl(null);
+            }).catch(error => {
+                console.error(error)
+            });
+        setFilterState({ ...filterState, isFiltering: true });
+    };
+
+    const onClearFilter = () => {
+        let newFilterObj = filterState;
+        setFilterState({ isFiltering: false, ...Object.keys(newFilterObj).forEach((i) => newFilterObj[i] = "") });
+        handleOnGrdiReady();
+        setAnchorEl(null);
     };
 
     const fileType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
@@ -250,6 +266,42 @@ function Dashboard() {
         FileSaver.saveAs(data, 'Products' + fileExtension);
         handleExportPopoverClose();
     };
+
+    const onPaginationChanged = useCallback((event) => {
+        const { api, pageSize, paginationProxy } = event;
+        const curPage = api.paginationGetCurrentPage();
+        if (event.newPage) {
+            axios.get(`http://localhost:8080/ims/products?columnName=${sortField}&sortBy=${sortOrder}&pageNumber=${currentPage}&noOfRecords=${pageSize}`)
+                .then(rowData => {
+                    console.log("rowData", rowData.data);
+                    setRowData(rowData.data);
+                    setCurrentPage(curPage + 1);
+                }).catch(error => {
+                    console.error(error)
+                });
+        }
+    }, []);
+
+    const paginationNumberFormatter = useCallback((params) => {
+        return '[' + params.value.toLocaleString() + ']';
+    }, []);
+
+    const onFirstDataRendered = useCallback((params) => {
+        gridRef.current.api.paginationGoToPage(0);
+    }, []);
+
+    const onPageSizeChanged = useCallback((event) => {
+        const { value } = event.target;
+        gridRef.current.api.paginationSetPageSize(Number(value));
+        axios.get(`http://localhost:8080/ims/products?columnName=${sortField}&sortBy=${sortOrder}&pageNumber=${currentPage}&noOfRecords=${value}`)
+            .then(rowData => {
+                console.log("rowData", rowData.data);
+                setRowData(rowData.data);
+                setPageSize(Number(value));
+            }).catch(error => {
+                console.error(error)
+            });
+    }, []);
 
     return (
         <div>
@@ -306,16 +358,37 @@ function Dashboard() {
 
                             pagination={true}
 
-                            paginationPageSize={10}
-
                             onCellClicked={cellClickedListener} // Optional - registering for Grid Event
 
                             onGridReady={handleOnGrdiReady} // Optional - registering for Grid Event
 
                             onSortChanged={handleOnSortChanged} // Optional - registering for Grid Event
 
-                            onPaginationChanged={handleChangePage} // Optional - registering for Grid Event
+                            paginationNumberFormatter={paginationNumberFormatter}
+
+                            onPaginationChanged={onPaginationChanged}
+
+                            onFirstDataRendered={onFirstDataRendered}
                         />
+                    </div>
+                    <div className="example-header">
+                        <InputLabel id="demo-simple-label">Page Size:</InputLabel>
+                        <Select
+                            labelId="demo-simple-select-label"
+                            id="status"
+                            name="status"
+                            value={pageSize}
+                            label="Status"
+                            placeholder="Select Status"
+                            className="select-page-size"
+                            onChange={onPageSizeChanged}
+                        >
+                            <MenuItem value={3}>3</MenuItem>
+                            <MenuItem value={10}>10</MenuItem>
+                            <MenuItem value={20}>20</MenuItem>
+                            <MenuItem value={50}>50</MenuItem>
+                            <MenuItem value={100}>100</MenuItem>
+                        </Select>
                     </div>
                 </Grid>
             </Grid>
@@ -415,8 +488,8 @@ function Dashboard() {
                             </Select>
                         </div>
                         <div className="div-btn-container">
-                            <Button variant="contained" className="btn-cancel">Cancel</Button>
-                            <Button variant="contained" className="btn-filter">Filter</Button>
+                            <Button variant="contained" className="btn-clear" onClick={onClearFilter}>Clear</Button>
+                            <Button variant="contained" className="btn-filter" onClick={() => onApplyFilter(filterState)}>Filter</Button>
                         </div>
                     </div>
                 </Popover>

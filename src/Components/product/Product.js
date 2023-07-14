@@ -49,19 +49,22 @@ function Product() {
     useEffect(() => {
         if (state && (state.tag === "EDIT" || state.tag === "VIEW")) {
             const { data } = state;
-            initialValues.productName = data.name;
-            initialValues.description = data.description;
-            initialValues.category = data.category;
-            initialValues.vendor = data.vendor;
-            initialValues.price = data.price;
-            initialValues.quantity = data.quantity;
-            initialValues.status = data.status;
-            console.log(initialValues);
-            setInitialValues(initialValues);
+            let newInitialValues = { ...initialValues };
+            axios.get(`http://localhost:8080/ims/products/${data.id}`)
+                .then(rowData => {
+                    newInitialValues.productName = rowData.data.name;
+                    newInitialValues.description = rowData.data.description;
+                    newInitialValues.category = rowData.data.category;
+                    newInitialValues.vendor = rowData.data.vendor;
+                    newInitialValues.price = rowData.data.price;
+                    newInitialValues.quantity = rowData.data.quantity;
+                    newInitialValues.status = rowData.data.status;
+                    setInitialValues(newInitialValues);
+                }).catch(error => console.error(error));
         }
     }, []);
 
-    const notify = (message)=>{
+    const notify = (message) => {
         // Calling toast method by passing string
         toast(message)
     }
@@ -86,7 +89,10 @@ function Product() {
                 setTimeout(() => {
                     navigate(-1);
                 }, 2000);
-            }).catch(error => console.error(error));
+            }).catch(error => {
+                console.error(error);
+                toast.error(error?.response?.data?.message || "Something went wrong");
+            });
         } else {
             axios.post(`http://localhost:8080/ims/products`, postObj).then(response => {
                 formikRef.current?.resetForm();
@@ -95,7 +101,10 @@ function Product() {
                 setTimeout(() => {
                     navigate(-1);
                 }, 2000);
-            }).catch(error => console.error(error));
+            }).catch(error => {
+                console.error(error);
+                toast.error(error?.response?.data?.message || "Something went wrong");
+            });
         }
     };
 
@@ -127,7 +136,7 @@ function Product() {
                                                 <Button variant="contained" className="btn-cancel"
                                                     type='button' onClick={handleOnCancel}>Cancel</Button>
                                                 <Button variant="contained" className="btn-submit" style={{ opacity: isSubmitted ? "0.5" : "1" }}
-                                                    type='submit' disabled={isSubmitted}>Save</Button>
+                                                    type='submit' disabled={isSubmitted}>{state && state.tag === "EDIT" ? "Update" : "Save"}</Button>
                                             </div>
                                         </Grid>
                                     </Grid>
@@ -139,11 +148,14 @@ function Product() {
                                                 id="outlined-basic"
                                                 variant="outlined"
                                                 name="productName"
+                                                inputProps={{
+                                                    "data-testid": "productName",
+                                                }}
                                                 value={values.productName}
-                                                disabled={isSubmitted}
+                                                disabled={isSubmitted || state?.tag === "EDIT"}
                                                 onChange={handleChange("productName")}
                                                 onBlur={handleBlur("productName")} />
-                                            <div className="div-error-message">{touched.productName && errors.productName}</div>
+                                            <div className="div-error-message" data-testid="name-error">{touched.productName && errors.productName}</div>
                                         </div>
                                         <div className="div-field-container">
                                             <InputLabel id="demo-simple-select-label">Description</InputLabel>
@@ -157,9 +169,12 @@ function Product() {
                                                 maxRows={4}
                                                 value={values.description}
                                                 disabled={isSubmitted}
+                                                inputProps={{
+                                                    "data-testid": "description",
+                                                }}
                                                 onChange={handleChange("description")}
                                                 onBlur={handleBlur("description")} />
-                                            <div className="div-error-message">{touched.description && errors.description}</div>
+                                            <div className="div-error-message" data-testid="description-error">{touched.description && errors.description}</div>
                                         </div>
                                         <div className="div-field-container">
                                             <InputLabel id="demo-simple-select-label">Category</InputLabel>
@@ -168,12 +183,19 @@ function Product() {
                                                 labelId="demo-simple-select-label"
                                                 id="demo-simple-select"
                                                 name='category'
+                                                inputProps={{
+                                                    "data-testid": "category",
+                                                }}
+                                                data-testid={'category'}
                                                 value={values.category}
                                                 disabled={isSubmitted}
                                                 placeholder="Select Category"
                                                 onChange={handleChange("category")}
                                                 onBlur={handleBlur("category")}
                                             >
+                                                <MenuItem value="">
+                                                    <em>Select Category</em>
+                                                </MenuItem>
                                                 {CATEGORY.map((item, index) => {
                                                     return (
                                                         <MenuItem key={index} value={item.value}>{item.name}</MenuItem>
@@ -186,16 +208,23 @@ function Product() {
                                             <div>
                                                 <InputLabel id="demo-simple-select-label">Vendor</InputLabel>
                                                 <Select
+                                                    data-testid="vendor"
                                                     fullWidth
                                                     labelId="demo-simple-select-label"
                                                     id="demo-simple-select"
                                                     name='vendor'
+                                                    inputProps={{
+                                                        "data-testid": "vendor",
+                                                    }}
                                                     value={values.vendor}
                                                     disabled={isSubmitted}
                                                     placeholder='Select Vendor'
                                                     onChange={handleChange("vendor")}
                                                     onBlur={handleBlur("vendor")}
                                                 >
+                                                    <MenuItem value="">
+                                                        <em>Select Vendor</em>
+                                                    </MenuItem>
                                                     {VENDORS.map((item, index) => {
                                                         return (
                                                             <MenuItem key={index} value={item.value}>{item.name}</MenuItem>
@@ -211,11 +240,15 @@ function Product() {
                                                     id="outlined-basic"
                                                     variant="outlined"
                                                     name="price"
+                                                    type="number"
+                                                    inputProps={{
+                                                        "data-testid": "price",
+                                                    }}
                                                     value={values.price}
                                                     disabled={isSubmitted}
                                                     onChange={handleChange("price")}
                                                     onBlur={handleBlur("price")} />
-                                                <div className="div-error-message">{touched.price && errors.price}</div>
+                                                <div className="div-error-message" data-testid="price-error">{touched.price && errors.price}</div>
                                             </div>
                                             <div>
                                                 <InputLabel id="demo-simple-select-label">Quantity</InputLabel>
@@ -224,11 +257,15 @@ function Product() {
                                                     id="outlined-basic"
                                                     variant="outlined"
                                                     name="quantity"
+                                                    type="number"
+                                                    inputProps={{
+                                                        "data-testid": "quantity",
+                                                    }}
                                                     value={values.quantity}
                                                     disabled={isSubmitted}
                                                     onChange={handleChange("quantity")}
                                                     onBlur={handleBlur("quantity")} />
-                                                <div className="div-error-message">{touched.quantity && errors.quantity}</div>
+                                                <div className="div-error-message" data-testid="quantity-error">{touched.quantity && errors.quantity}</div>
                                             </div>
                                         </div>
                                         <div className="div-field-container">
@@ -237,6 +274,9 @@ function Product() {
                                                 fullWidth
                                                 aria-labelledby="demo-controlled-radio-buttons-group"
                                                 name="status"
+                                                inputProps={{
+                                                    "data-testid": "status",
+                                                }}
                                                 value={values.status}
                                                 onChange={handleChange}
                                                 className="radio-group-status"

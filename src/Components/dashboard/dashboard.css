@@ -4,7 +4,7 @@
 
 .grid-product-list-container {
     padding: 10px;
-    background: #FFFFFF; 
+    background: #FFFFFF;
     margin-top: 16px;
 }
 
@@ -61,7 +61,7 @@
     justify-content: right;
 }
 
-.btn-cancel {
+.btn-clear {
     background: white !important;
     color: black !important;
 }
@@ -79,4 +79,18 @@
 .csv-link {
     color: black;
     text-decoration: none;
+}
+
+.example-header {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    bottom: 6%;
+    margin-left: 10px;
+}
+
+.select-page-size {
+    height: 25px;
+    width: 85px;
+    margin-left: 10px;
 }

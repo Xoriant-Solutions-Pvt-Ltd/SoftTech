@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Route, Routes } from 'react-router-dom';
 import Navbar from './Common/Navbar';
 import Header from './Common/Header';
@@ -30,6 +29,8 @@ function App() {
 					<Routes>
 						<Route path="/" element={<Dashboard />} />
 						<Route path="newProduct" element={<Product />} />
+						<Route path="product/:id" element={<Product />} />
+						<Route path="product/:id" element={<Product />} />
 						{/* <Route path="contact" element={<Contact />} />
 						<Route path="*" element={<NoPage />} /> */}
 					</Routes>
